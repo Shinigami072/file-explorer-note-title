@@ -17,7 +17,7 @@ export class VaultHandler {
     }
 
     update = debounce(
-        () => updateCount(this.waitingList, this.plugin),
+        () => updateCount(this.waitingList, this.plugin, this.vault),
         500,
         true,
     );

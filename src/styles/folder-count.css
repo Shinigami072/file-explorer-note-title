@@ -22,3 +22,15 @@ body:not(.oz-show-all-num)
 .nav-folder-title[data-count='0']::after {
     display: none;
 }
+
+.nav-file-title::after {
+    content: attr(data-name);
+    display: inline-block;
+    position: relative;
+    font-size: calc(100% * 0.8);
+    margin-right: 4px;
+    /* border-radius: 3px; */
+    padding: 2px 0;
+    /* background-color: var(--background-secondary-alt); */
+    transition: opacity 100ms ease-in-out;
+}

@@ -57,7 +57,7 @@ export default class FileExplorerNoteCount extends Plugin {
         else {
             if (!this.fileExplorer)
                 this.fileExplorer = leaves[0].view as FileExplorer;
-            setupCount(this, revert);
+            setupCount(this, this.vaultHandler.vault, revert);
 
             this.doHiddenRoot(revert);
             if (!revert) {
@@ -99,7 +99,7 @@ export default class FileExplorerNoteCount extends Plugin {
     }
 
     reloadCount() {
-        setupCount(this);
+        setupCount(this, this.vaultHandler.vault);
     }
 
     get fileFilter(): AbstractFileFilter {
