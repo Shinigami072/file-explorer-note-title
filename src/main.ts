@@ -1,7 +1,6 @@
 import './styles/patch.css';
 
 import {
-    AbstractFileFilter,
     rootHiddenClass,
     showAllNumbersClass,
     withSubfolderClass,
@@ -9,7 +8,7 @@ import {
 import { FileExplorer, Plugin, TFile } from 'obsidian';
 import { VaultHandler } from 'vault-handler';
 
-import { setupCount } from './folder-count';
+import { setupTitle } from './folder-title';
 import { DEFAULT_SETTINGS, FENoteCountSettingTab } from './settings';
 
 export default class FileExplorerNoteCount extends Plugin {
@@ -57,13 +56,13 @@ export default class FileExplorerNoteCount extends Plugin {
         else {
             if (!this.fileExplorer)
                 this.fileExplorer = leaves[0].view as FileExplorer;
-            setupCount(this, this.vaultHandler.vault, revert);
+            setupTitle(this, this.vaultHandler.vault, revert);
 
-            this.doHiddenRoot(revert);
+            // this.doHiddenRoot(revert);
             if (!revert) {
-                this.registerEvent(
-                    this.app.workspace.on('css-change', this.doHiddenRoot),
-                );
+                // this.registerEvent(
+                //     this.app.workspace.on('css-change', this.doHiddenRoot),
+                // );
                 this.vaultHandler.registerVaultEvent();
                 if (this.settings.showAllNumbers)
                     document.body.addClass('oz-show-all-num');
@@ -79,39 +78,16 @@ export default class FileExplorerNoteCount extends Plugin {
     };
 
     async onload() {
-        console.log('loading FileExplorerNoteCount');
-        this.addSettingTab(new FENoteCountSettingTab(this.app, this));
-        await this.loadSettings();
+        console.log('loading FileExplorerNoteTitle');
         this.app.workspace.onLayoutReady(this.initialize);
     }
 
     onunload() {
-        console.log('unloading FileExplorerNoteCount');
+        console.log('unloading FileExplorerNoteTitle');
         this.initialize(true);
     }
 
-    async loadSettings() {
-        this.settings = { ...this.settings, ...(await this.loadData()) };
-    }
-
-    async saveSettings() {
-        await this.saveData(this.settings);
-    }
-
-    reloadCount() {
-        setupCount(this, this.vaultHandler.vault);
-    }
-
-    get fileFilter(): AbstractFileFilter {
-        let list = this.settings.filterList;
-        return (af) => {
-            if (af instanceof TFile) {
-                const { extension: target } = af;
-                // if list is empty, filter nothing
-                if (list.length === 0) return true;
-                else if (this.settings.blacklist) return !list.includes(target);
-                else return list.includes(target);
-            } else return false;
-        };
+    reloadTitle() {
+        setupTitle(this, this.vaultHandler.vault);
     }
 }

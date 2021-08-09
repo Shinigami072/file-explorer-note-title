@@ -60,7 +60,7 @@ export class FENoteCountSettingTab extends PluginSettingTab {
                     .onChange((value) => {
                         document.body.toggleClass('oz-show-all-num', value);
                         this.plugin.settings.showAllNumbers = value;
-                        this.plugin.saveSettings();
+                        // this.plugin.saveSettings();
                     }),
             );
         this.filterOpt();
@@ -75,8 +75,8 @@ export class FENoteCountSettingTab extends PluginSettingTab {
             .addToggle((toggle) =>
                 toggle.setValue(this.showOnlyNoteValue).onChange((value) => {
                     this.showOnlyNoteValue = value;
-                    this.plugin.reloadCount();
-                    this.plugin.saveSettings();
+                    this.plugin.reloadTitle();
+                    // this.plugin.saveSettings();
                     this.display();
                 }),
             );
@@ -96,8 +96,8 @@ export class FENoteCountSettingTab extends PluginSettingTab {
                     const onChange = async (value: string) => {
                         const list = value.split(',').map((v) => v.trim());
                         this.plugin.settings.filterList = list;
-                        this.plugin.reloadCount();
-                        await this.plugin.saveSettings();
+                        this.plugin.reloadTitle();
+                        // await this.plugin.saveSettings();
                     };
                     text.setPlaceholder(
                         'Leave it empty to count all types of files',
@@ -118,8 +118,8 @@ export class FENoteCountSettingTab extends PluginSettingTab {
                         .setValue(this.plugin.settings.blacklist)
                         .onChange((value) => {
                             this.plugin.settings.blacklist = value;
-                            this.plugin.reloadCount();
-                            this.plugin.saveSettings();
+                            this.plugin.reloadTitle();
+                            // this.plugin.saveSettings();
                         }),
                 );
         }
