@@ -1,127 +1,117 @@
-import { equals } from 'misc';
-import { App, debounce, PluginSettingTab, Setting } from 'obsidian';
+import {
+    PluginSettingTab,
+    Setting,
+    TextComponent,
+    ToggleComponent,
+} from 'obsidian';
 
-import FileExplorerNoteCount from './main';
+import FileExplorerNoteTitle from './main';
 
-export interface FENoteCountSettings {
-    showAllNumbers: boolean;
-    filterList: string[];
-    blacklist: boolean;
+export interface FileExplorerNoteTitleSettings {
+    useMarkdownTitle: boolean;
+    useFrontmatterTitle: boolean;
+    frontmatterTitleField: string;
+    useAliasTitle: boolean;
 }
 
-export const DEFAULT_SETTINGS: FENoteCountSettings = {
-    showAllNumbers: false,
-    filterList: ['md'],
-    blacklist: false,
+export const DEFAULT_SETTINGS: FileExplorerNoteTitleSettings = {
+    useMarkdownTitle: true,
+    useFrontmatterTitle: true,
+    frontmatterTitleField: 'title',
+    useAliasTitle: false,
 };
 
-export class FENoteCountSettingTab extends PluginSettingTab {
-    plugin: FileExplorerNoteCount;
+export class FileExplorerTitleSettingTab extends PluginSettingTab {
+    heading: Setting;
+    useFrontmatterFieldSetting: Setting;
+    frontmatterFieldSetting: Setting;
+    useAliasTitleSetting: Setting;
+    useMarkdownHeaderSetting: Setting;
 
-    constructor(app: App, plugin: FileExplorerNoteCount) {
-        super(app, plugin);
+    plugin: FileExplorerNoteTitle;
+
+    constructor(plugin: FileExplorerNoteTitle) {
+        super(plugin.app, plugin);
         this.plugin = plugin;
+        let { containerEl } = this;
+        this.heading = new Setting(containerEl)
+            .setName('File Explorer Note Title Settings')
+            .setHeading();
+        this.useFrontmatterFieldSetting = new Setting(containerEl)
+            .setName('Use Frontmatter Field as Title')
+            .setDesc('Should use frontmatter field as title?')
+            .addToggle((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.useFrontmatterTitle)
+                    .onChange((value) => {
+                        this.plugin.settings.useFrontmatterTitle = value;
+                        this.updateSettings();
+                    });
+            });
+        this.frontmatterFieldSetting = new Setting(containerEl)
+            .setName('Frontmatter Title Field')
+            .addText((component: TextComponent) => {
+                component
+                    .setValue(this.plugin.settings.frontmatterTitleField)
+                    .onChange((value) => {
+                        this.plugin.settings.frontmatterTitleField = value;
+                        this.updateSettings();
+                    });
+            })
+            .setDisabled(!this.plugin.settings.useFrontmatterTitle);
+
+        this.useAliasTitleSetting = new Setting(containerEl)
+            .setName('Use First Alias as Title')
+            .setDesc('Should first alias in frontmatter be used as title?')
+            .addToggle((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.useAliasTitle)
+                    .onChange((value) => {
+                        this.plugin.settings.useAliasTitle = value;
+                        this.updateSettings();
+                    });
+            });
+
+        this.useMarkdownHeaderSetting = new Setting(containerEl)
+            .setName('Use Markdown Header as Title')
+            .setDesc('Should markdown headings be used as title?')
+            .addToggle((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.useMarkdownTitle)
+                    .onChange((value) => {
+                        this.plugin.settings.useMarkdownTitle = value;
+                        this.updateSettings();
+                    });
+            });
     }
 
-    get showOnlyNoteValue(): boolean {
-        const { settings } = this.plugin;
-        return (
-            settings.blacklist === DEFAULT_SETTINGS.blacklist &&
-            equals(settings.filterList, DEFAULT_SETTINGS.filterList)
+    display() {
+        this.updateComponents();
+        this.updateSettings();
+    }
+    updateComponents() {
+        (this.useAliasTitleSetting.components[0] as ToggleComponent).setValue(
+            this.plugin.settings.useAliasTitle,
+        );
+        (
+            this.useFrontmatterFieldSetting.components[0] as ToggleComponent
+        ).setValue(this.plugin.settings.useFrontmatterTitle);
+        (
+            this.useMarkdownHeaderSetting.components[0] as ToggleComponent
+        ).setValue(this.plugin.settings.useMarkdownTitle);
+        (this.frontmatterFieldSetting.components[0] as TextComponent).setValue(
+            this.plugin.settings.frontmatterTitleField,
         );
     }
 
-    set showOnlyNoteValue(value: boolean) {
-        const { blacklist, filterList } = DEFAULT_SETTINGS;
-        this.plugin.settings.blacklist = blacklist;
-        if (value) {
-            // do deep copy
-            this.plugin.settings.filterList = Array.from(filterList);
-        } else {
-            this.plugin.settings.filterList.length = 0;
-        }
+    updateSettings() {
+        this.frontmatterFieldSetting.setDisabled(
+            !this.plugin.settings.useFrontmatterTitle,
+        );
     }
 
-    display(): void {
-        let { containerEl } = this;
-        containerEl.empty();
-        containerEl.createEl('h2', {
-            text: 'File Explorer Note Count Settings',
-        });
-
-        new Setting(containerEl)
-            .setName('Show All Numbers')
-            .setDesc(
-                'Turn on this option if you want to see the number of notes even after you expand the collapsed folders',
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.plugin.settings.showAllNumbers)
-                    .onChange((value) => {
-                        document.body.toggleClass('oz-show-all-num', value);
-                        this.plugin.settings.showAllNumbers = value;
-                        // this.plugin.saveSettings();
-                    }),
-            );
-        this.filterOpt();
-    }
-
-    filterOpt(): void {
-        new Setting(this.containerEl)
-            .setName('Show Only Markdown Notes')
-            .setDesc(
-                'Turn off this option to choose file that should be counted',
-            )
-            .addToggle((toggle) =>
-                toggle.setValue(this.showOnlyNoteValue).onChange((value) => {
-                    this.showOnlyNoteValue = value;
-                    this.plugin.reloadTitle();
-                    // this.plugin.saveSettings();
-                    this.display();
-                }),
-            );
-        if (!this.showOnlyNoteValue) {
-            new Setting(this.containerEl)
-                .setName('Filter List')
-                .setDesc(
-                    createFragment((descEl) => {
-                        descEl.appendText(
-                            'Extension list to include/exclude file during counting',
-                        );
-                        descEl.appendChild(document.createElement('br'));
-                        descEl.appendText('Separated by comma');
-                    }),
-                )
-                .addTextArea((text) => {
-                    const onChange = async (value: string) => {
-                        const list = value.split(',').map((v) => v.trim());
-                        this.plugin.settings.filterList = list;
-                        this.plugin.reloadTitle();
-                        // await this.plugin.saveSettings();
-                    };
-                    text.setPlaceholder(
-                        'Leave it empty to count all types of files',
-                    );
-                    text.setValue(
-                        this.plugin.settings.filterList.join(', '),
-                    ).onChange(debounce(onChange, 500, true));
-                    text.inputEl.rows = 2;
-                    text.inputEl.cols = 25;
-                });
-            new Setting(this.containerEl)
-                .setName('Enable Blacklist')
-                .setDesc(
-                    'Turn on this option to use Filter List to exclude files',
-                )
-                .addToggle((toggle) =>
-                    toggle
-                        .setValue(this.plugin.settings.blacklist)
-                        .onChange((value) => {
-                            this.plugin.settings.blacklist = value;
-                            this.plugin.reloadTitle();
-                            // this.plugin.saveSettings();
-                        }),
-                );
-        }
+    hide() {
+        this.plugin.saveData(this.plugin.settings);
+        this.plugin.refresh();
     }
 }

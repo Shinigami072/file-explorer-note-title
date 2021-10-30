@@ -1,10 +1,18 @@
 {
-    "id": "file-explorer-markdown-titles",
-    "name": "File Explorer Markdown Titles",
-    "version": "1.0.2",
+    "id": "file-explorer-note-titles",
+    "name": "File Explorer Note Titles",
+    "version": "1.0.0",
     "minAppVersion": "0.11.13",
-    "description": "Shows the first markdown header of a note in the file explorer",
-    "author": "Dylan Elliott",
-    "authorUrl": "https://github.com/dyldog",
+    "description": "Gets the note's title from it's markdown file and displays it in file-explorer and graph views",
+    "authors":[
+        {
+            "author": "Dylan Elliott",
+            "authorUrl": "https://github.com/dyldog"
+        },
+        {
+            "author": "Shinigami072",
+            "authorUrl": "https://github.com/Shinigami072"
+        }
+    ],
     "isDesktopOnly": false
 }

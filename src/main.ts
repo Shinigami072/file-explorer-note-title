@@ -1,104 +1,83 @@
-import './styles/patch.css';
+import { Plugin } from 'obsidian';
 
+import { FilenameService } from './filename-service';
+import { MetadataCacheHandler } from './metadatacache-handler';
+import { DEFAULT_SETTINGS, FileExplorerTitleSettingTab } from './settings';
 import {
-    rootHiddenClass,
-    showAllNumbersClass,
-    withSubfolderClass,
-} from 'misc';
-import { FileExplorer, Plugin, TFile, App } from 'obsidian';
-import { WorkspaceLeaf } from 'obsidian';
-import { VaultHandler } from 'vault-handler';
-import { GraphInteractor } from 'graph-interactor';
+    registerFileExplorerView,
+    unregisterFileExplorerView,
+} from './view-adapters/file-explorer-view-adapter';
+import {
+    registerGraphView,
+    unregisterGraphView,
+} from './view-adapters/graph-view-adapter';
+import { ViewAdapters } from './view-adapters/view-adapters';
 
-import { setupTitle } from './folder-title';
-import { DEFAULT_SETTINGS, FENoteCountSettingTab } from './settings';
-
-export default class FileExplorerNoteCount extends Plugin {
+export default class FileExplorerNoteTitle extends Plugin {
     settings = DEFAULT_SETTINGS;
 
-    fileExplorer?: FileExplorer;
+    filenameService = new FilenameService(this);
+    metadataCacheHandler = new MetadataCacheHandler(this);
+    viewAdapters: ViewAdapters = new ViewAdapters(this);
 
-    vaultHandler = new VaultHandler(this);
-    graphInteractor = new GraphInteractor(this)
-
-    /** compatible with theme that hide root folder */
-    doHiddenRoot = (revert = false) => {
-        if (!this.fileExplorer) {
-            console.error('file-explorer not found');
-            return;
-        }
-        const root = this.fileExplorer.fileItems['/'];
-        const styles = getComputedStyle(root.titleInnerEl);
-        const setup = () => {
-            const shouldHide =
-            styles.display === 'none' ||
-            styles.color === 'rgba(0, 0, 0, 0)';
-            root.titleEl.toggleClass(rootHiddenClass, !revert && shouldHide);
-        };
-        if (styles.display !== '') setup();
-        else {
-            let count = 0;
-            const doId = window.setInterval(() => {
-                if (count > 10) {
-                    console.error('%o styles empty', root.titleInnerEl);
-                    window.clearInterval(doId);
-                } else if (styles.display === '') {
-                    count++;
-                } else {
-                    setup();
-                    window.clearInterval(doId);
-                }
-            }, 100);
-        }
-    };
-
-    initialize = (revert = false) => {
-        // this.graphInteractor.updateGraphNodes();
-   
-
-        const leaves = this.app.workspace.getLeavesOfType('file-explorer');
-        if (leaves.length > 1) console.error('more then one file-explorer');
-        else if (leaves.length < 1) console.error('file-explorer not found');
-        else {
-            if (!this.fileExplorer)
-                this.fileExplorer = leaves[0].view as FileExplorer;
-            setupTitle(this, this.vaultHandler.vault, revert);
-
-            // this.doHiddenRoot(revert);
-            if (!revert) {
-                // this.registerEvent(
-                //     this.app.workspace.on('css-change', this.doHiddenRoot),
-                // );
-                this.app.workspace.on('layout-change', () => setTimeout(() => this.graphInteractor.updateGraphNodes(), 1));
-
-                this.vaultHandler.registerVaultEvent();
-                if (this.settings.showAllNumbers)
-                    document.body.addClass('oz-show-all-num');
-            } else {
-                this.app.workspace.removeEventListener('layout-change', this)
-                for (const el of document.getElementsByClassName(
-                    withSubfolderClass,
-                    )) {
-                    el.removeClass(withSubfolderClass);
-            }
-            document.body.removeClass(showAllNumbersClass);
+    loadFileExplorerAdapter() {
+        //@ts-ignore
+        if (this.app.internalPlugins.getPluginById('file-explorer')) {
+            registerFileExplorerView(
+                this.viewAdapters,
+                this.filenameService,
+                this.metadataCacheHandler,
+                this.app.vault,
+            );
+            //@ts-ignore
+            this.app.internalPlugins
+                .getPluginById('file-explorer')
+                .register(() => {
+                    unregisterFileExplorerView(this.viewAdapters);
+                });
+        } else {
+            unregisterFileExplorerView(this.viewAdapters);
         }
     }
-};
 
-async onload() {
-    console.log('loading FileExplorerNoteTitle');
-    this.app.workspace.onLayoutReady(this.initialize);
-}
+    loadGraphViewAdapter() {
+        //@ts-ignore
+        if (this.app.internalPlugins.getPluginById('graph')) {
+            registerGraphView(
+                this.viewAdapters,
+                this.filenameService,
+                this.metadataCacheHandler,
+            );
+            //@ts-ignore
+            this.app.internalPlugins
+                .getPluginById('file-explorer')
+                .register(() => {
+                    unregisterGraphView(this.viewAdapters);
+                });
+        } else {
+            unregisterGraphView(this.viewAdapters);
+        }
+    }
 
-onunload() {
-    console.log('unloading FileExplorerNoteTitle');
-    this.initialize(true);
-}
+    async onload() {
+        this.loadData().then((value) => {
+            this.settings = value ?? DEFAULT_SETTINGS;
+        });
+        this.app.workspace.onLayoutReady(() => {
+            this.loadFileExplorerAdapter();
+            this.loadGraphViewAdapter();
+            this.viewAdapters.updateViewAdapters();
+            this.addSettingTab(new FileExplorerTitleSettingTab(this));
+        });
+    }
 
+    onunload() {
+        this.viewAdapters.clear();
+    }
 
-reloadTitle() {
-    setupTitle(this, this.vaultHandler.vault);
-}
-
+    refresh() {
+        this.metadataCacheHandler.batchUpdate(
+            this.app.vault.getMarkdownFiles(),
+        );
+    }
 }

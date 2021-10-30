@@ -1,0 +1,33 @@
+tagFormat: "${version}"
+plugins: [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      [
+        "@semantic-release/changelog",
+        {
+          "changelogTitle": "# Changelog\n\nAll notable changes to this project will be documented in this file. See\n[Conventional Commits](https://conventionalcommits.org) for commit guidelines."
+        }
+      ],
+      [
+        "@semantic-release/github",
+        {
+          "assets": [
+            {
+              "path": "main.js"
+            },
+            {
+              "path": "manifest.json"
+            },
+            {
+              "path": "style.css"
+            }
+          ]
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "message": "chore: Release ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        }
+      ]
+    ]
