@@ -1,11 +1,17 @@
-# Obsidian File Explorer Markdown Titles
+# Obsidian File Explorer Note Titles
 
-Shows the first markdown header found within a note next to the filename in the sidebar. No settings, just go.
+Shows note's title instead of just a filename in file-explorer.
 
-![](images/Sidebar.png)
+The title is resolved as:
+- title field in frontmatter
+- first alias in frontmatter
+- first header in the note.
+It's possible to turn of any of those sources in Settings
 
-Also replaces the titles in the graphview with the note's markdown title.
+![note titles in file-explorer](images/Sidebar.png)
 
-![](images/Graph.png)
+Also replaces the titles in the graphview with the note's title.
 
-Forked from and based heavilly on [file-explorer-note-count](https://github.com/ozntel/file-explorer-note-count)
+![note titles in graph view](images/Graph.png)
+
+Forked from and based on [file-explorer-markdown-titles](https://github.com/Dyldog/file-explorer-markdown-titles)
